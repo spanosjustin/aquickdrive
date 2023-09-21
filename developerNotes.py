@@ -18,10 +18,8 @@
 
 
 ## Near Future
-##  I have to fix the night shader issue
 ##  and then fix the form/display of the headlight
 ##  Fix the best of all time file save system
-##  Fix the Game Over Screen's U.I.
     
 
 ## Far Future

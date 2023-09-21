@@ -20,6 +20,13 @@ try:
 except FileNotFoundError:
     best_score_all_time = 0
 
+# Initialize the best percentage of all time
+try:
+    with open("best_percentage.txt", "r") as file:
+        best_percentage_all_time = float(file.read())
+except FileNotFoundError:
+    best_percentage_all_time = 0.0
+
 # Constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -27,27 +34,12 @@ PLAYER_SPEED = 5
 COIN_SPEED = 3
 COIN_SPAWN_RATE = 100  # Adjust this for the frequency of coins
 MAX_MISSED_COINS = 5  # Maximum number of missed coins before game over
-NIGHT_COLOR = (0, 0, 40, 200)  # Dark color for night effect (RGBA format)
+NIGHT_COLOR = (0, 0, 255, 100)  # Dark color for night effect (RGBA format)
 HEADLIGHT_RADIUS = 200  # Radius of the headlight effect
 
 # Initialize the best score of all time
 best_score_all_time = 0
 best_percentage_all_time = 0.0  # Initialize the best percentage of all time
-
-# Load the best score from the file
-try:
-    with open("best_score.txt", "r") as file:
-        best_score = int(file.read())
-except FileNotFoundError:
-    best_score = 0
-
-# Load the best percentage from the file
-try:
-    with open("best_percentage.txt", "r") as file:
-        best_percentage_all_time = float(file.read())
-except FileNotFoundError:
-    best_percentage_all_time = 0.0
-
 
 # Define fonts
 font = pygame.font.Font(None, 36)  # Font for displaying the score
@@ -113,9 +105,6 @@ def check_collision():
 font = pygame.font.Font(None, 36)  # Font for displaying the score
 blue_font = pygame.font.Font(None, 24)  # Font for displaying missed coins count in blue
 
-# Create a transparent surface for the headlight effect
-headlight_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-
 
 clock = pygame.time.Clock()
 
@@ -131,6 +120,7 @@ headlight_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPH
 
 clock = pygame.time.Clock()
 
+# Inside your game loop
 while not game_over:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -143,25 +133,31 @@ while not game_over:
     if keys[pygame.K_RIGHT] and player_rect.right < SCREEN_WIDTH:
         player_rect.x += PLAYER_SPEED
 
-     # Clear the headlight surface to reset it
-    headlight_surface.fill((0, 0, 0, 0))
+    # Create a transparent surface for the night effect
+    night_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    night_color = (15, 0, 255, 135)  # Blue night filter with alpha
+    night_surface.fill(night_color)
 
     # Calculate the position of the headlight effect based on the player's position
     headlight_center = (player_rect.centerx, player_rect.centery - 40)
 
-    # Draw the illuminated area (circular) on the headlight surface
-    pygame.draw.circle(headlight_surface, NIGHT_COLOR, headlight_center, HEADLIGHT_RADIUS)
+    # Create a transparent surface for the headlight effect
+    headlight_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+
+    # Draw the yellow headlight on the headlight_surface
+    headlight_color = (100, 100, 0, 100)  # Yellow headlight with alpha
+    pygame.draw.circle(headlight_surface, headlight_color, headlight_center, HEADLIGHT_RADIUS)
 
     # Blit the background image onto the screen
     screen.blit(background_image, background_rect)
-    
+
     # Blit the coins and player on the screen
     for coin_rect in coins:
         coin_rect.y += COIN_SPEED
         screen.blit(coin_image, coin_rect)
 
-    # Apply the night shader (dark overlay)
-    screen.blit(headlight_surface, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+    # Blit the night surface to apply the blue night filter
+    screen.blit(night_surface, (0, 0))
 
     # Check for collisions
     check_collision()
@@ -170,30 +166,51 @@ while not game_over:
     if random.randint(1, COIN_SPAWN_RATE) == 1:
         spawn_coin()
 
+    # Blit the headlight surface to apply the yellow headlight
+    screen.blit(headlight_surface, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
     screen.blit(player_image, player_rect)
 
     # Display the score in red letters
     score_text = font.render(f"Score: {score}", True, (255, 0, 0))
     screen.blit(score_text, (10, 10))
 
-    # Display the missed coins count in blue letters
-    missed_text = blue_font.render(f"Missed: {missed_coins}", True, (250, 215, 0))
+    # Display the missed coins count in dark red letters
+    missed_text = blue_font.render(f"Missed: {missed_coins}", True, (128, 0, 0))
     screen.blit(missed_text, (10, 50))
 
-    # Display the best score of all time in blue letters
-    best_all_time_text = blue_font.render(f"Best of All Time: {best_score_all_time}", True, (0, 0, 255))
-    screen.blit(best_all_time_text, (10, 80))
+    # Display the best score of all time in white letters
+    best_all_time_text = blue_font.render(f"High Score: {best_score_all_time}", True, (255, 255, 255))
+    screen.blit(best_all_time_text, (630, 10))
 
-    if score > best_score_all_time:
-        best_score_all_time = score
-        if missed_coins > 0:
-            best_percentage_all_time = round((score / (score + missed_coins)) * 100, 1)
-        else:
-            best_percentage_all_time = 100.0
-    
+    # Calculate the percentage for the current game session
+    if missed_coins > 0:
+        current_percentage = round((score / (score + missed_coins)) * 100, 1)
+    else:
+        current_percentage = 100.0
+
+    # Check for a new best percentage
+    if current_percentage > best_percentage_all_time:
+        best_percentage_all_time = current_percentage
+        # Save the new best percentage to the file
+        with open("best_percentage.txt", "w") as file:
+            file.write(str(best_percentage_all_time))
+            
+    # Calculate the percentage for the current game session
+    if missed_coins > 0:
+        current_percentage = round((score / (score + missed_coins)) * 100, 1)
+    else:
+        current_percentage = 100.0
+
+    # Check for a new best percentage
+    if current_percentage > best_percentage_all_time:
+        best_percentage_all_time = current_percentage
+        # Save the new best percentage to the file
+        with open("best_percentage.txt", "w") as file:
+            file.write(str(best_percentage_all_time))
+
     pygame.display.flip()
     clock.tick(60)
-
 
 # Check if the game is over
 if game_over:
@@ -210,12 +227,27 @@ if game_over:
     # Define the game_over_text here
     game_over_text = game_over_font.render("Game Over", True, (255, 0, 0))
 
+    # Get the rect for the game over text to center it vertically and horizontally
+    game_over_text_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+
+    # Define the vertical spacing between text elements
+    text_spacing = 60
+
+    # Calculate vertical positions for text elements
+    game_over_y = SCREEN_HEIGHT // 2 - 3 * text_spacing
+    score_y = game_over_y + text_spacing
+    missed_y = score_y + text_spacing
+    ratio_y = missed_y + text_spacing
+    best_all_time_y = ratio_y + text_spacing
+    best_percentage_y = best_all_time_y + text_spacing
+
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-                
+
         # Load the best percentage of all time from the file
         try:
             with open("best_percentage.txt", "r") as file:
@@ -229,20 +261,28 @@ if game_over:
         else:
             ratio_percentage = 100.0
 
-        # Display the best score of all time on the game over screen
-        best_all_time_text = font.render(f"Best Score All Time: {best_score_all_time}", True, (255, 0, 0))
+        # Display the best score of all time in white letters (within the game loop)
+        best_all_time_text = blue_font.render(f"High Score: {best_score_all_time}", True, (255, 255, 255))
+        screen.blit(best_all_time_text, (630, 10))
 
-        # Calculate and render the best percentage of all time
-        best_percentage_text = font.render(f"Best Percentage: {best_percentage_all_time}%", True, (0, 0, 255))
+        
+        # Display the best percentage of all time on the game over screen
+        best_percentage_text = font.render(f"Best Percentage: {best_percentage_all_time}%", True, (255, 255, 255))
+        screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - best_percentage_text.get_width() // 2, best_percentage_y))
 
-        # Define the ratio_text
-        ratio_text = font.render(f"You Got: {ratio_percentage}%", True, (255, 0, 0))
+        # Define the ratio_text AKA the percentage
+        ratio_text = font.render(f"Percentage: {ratio_percentage}%", True, (255, 255, 0))
 
-        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
-        screen.blit(score_text, (SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2))
-        screen.blit(missed_text, (SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 + 50))
-        screen.blit(ratio_text, (SCREEN_WIDTH // 2 - 65, SCREEN_HEIGHT // 2 + 100))
-        screen.blit(best_all_time_text, (SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 + 150))
-        screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 + 200))
+        # Clear the screen
+        screen.fill((0, 0, 0))
+
+        
+        # Blit the game over text and other texts, centering them both vertically and horizontally
+        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, game_over_y))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, score_y))
+        screen.blit(missed_text, (SCREEN_WIDTH // 2 - missed_text.get_width() // 2, missed_y))
+        screen.blit(ratio_text, (SCREEN_WIDTH // 2 - ratio_text.get_width() // 2, ratio_y))
+        screen.blit(best_all_time_text, (SCREEN_WIDTH // 2 - best_all_time_text.get_width() // 2, best_all_time_y))
+        screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - best_percentage_text.get_width() // 2, best_percentage_y))
 
         pygame.display.flip()
