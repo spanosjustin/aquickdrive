@@ -16,16 +16,17 @@
 
 ## Going forward...
 
-
 ## Near Future
-##  and then fix the form/display of the headlight
-##  Fix the best of all time file save system
-    
+#  Make the colors change over time; a evening to dark night cycle to dawn?
+#  Make the change of time fixed to an input audio file
 
-## Far Future
-##  Make the colors change over time; a evening to dark night cycle to dawn?
-##  Make the change of time fixed to an input
-##  Make coin appearance a little more friendly
+## Far Future    
+#  Add 3 difficulties
+#  Add down as a break
+#  When holding break you can drift
+#  Space bar to excel -- if not you go very slow but must keep going
+#  Add a new calculation for the coins and your speed,
+#  but also make them appear less often as slower speeds
 
 
 ##  More Ideas in Planning
