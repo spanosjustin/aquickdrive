@@ -33,10 +33,22 @@ background_image = pygame.image.load("track.png")
 background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
 player_image = pygame.transform.scale(pygame.image.load("car.png"), (60, 100))
 coin_image = pygame.transform.scale(pygame.image.load("coin.png"), (40, 40))
+# Load the snowflake image
+snowflake_image = pygame.image.load("snowflake.png")
+snowflake_image = pygame.transform.scale(snowflake_image, (20, 20))  # Adjust the size as needed
+
+# Load the retry button image and scale it
+retry_button_image = pygame.transform.scale(pygame.image.load("retry_button.png"), (100, 50))
+
+# Get the rect of the retry button for collision detection
+retry_button_rect = retry_button_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+
 
 # Initialize player and coin lists
 player_rect = player_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
 coins = []
+# Create a list to store snowflake positions
+snowflakes = []
 
 # Load best score from file
 try:
@@ -73,6 +85,13 @@ def check_collision():
             coins.pop(0)
             if missed_coins >= MAX_MISSED_COINS:
                 game_over = True
+
+# Function to spawn snowflakes
+def spawn_snowflake():
+    snowflake_rect = snowflake_image.get_rect()
+    snowflake_rect.x = random.randint(0, SCREEN_WIDTH)
+    snowflake_rect.y = -snowflake_rect.height
+    snowflakes.append(snowflake_rect)
 
 # Initialize game variables
 score = 0
@@ -115,7 +134,9 @@ while not game_over:
     ]
     pygame.draw.polygon(headlight_surface, headlight_color, headlight_points)
 
-
+    # In your main loop, after checking for collisions, spawn new snowflakes
+    if random.randint(1, 20) == 1:  # Adjust the spawn rate as needed
+        spawn_snowflake()
 
     # Blit the background image onto the screen
     screen.blit(background_image, (0, 0))
@@ -137,6 +158,15 @@ while not game_over:
 
     # Blit the headlight surface to apply the yellow headlight
     screen.blit(headlight_surface, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+    # Inside your main loop
+    for snowflake_rect in snowflakes:
+        snowflake_rect.y += 2  # Adjust the speed of falling snowflakes
+        screen.blit(snowflake_image, snowflake_rect)
+
+    # Remove snowflakes that have gone off-screen
+    snowflakes = [sf for sf in snowflakes if sf.y < SCREEN_HEIGHT]
+
 
     screen.blit(player_image, player_rect)
 
@@ -201,6 +231,20 @@ if game_over:
                 pygame.quit()
                 sys.exit()
 
+        # Check for a mouse click on the retry button
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # Get the mouse click position
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Check if the mouse click is within the retry button's rect
+            if retry_button_rect.collidepoint(mouse_pos):
+                # Reset the game variables
+                score = 0
+                missed_coins = 0
+                game_over = False
+                player_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+                coins = []
+
         # Load the best percentage of all time from the file
         try:
             with open("best_percentage.txt", "r") as file:
@@ -228,12 +272,12 @@ if game_over:
         # Clear the screen
         screen.fill((0, 0, 0))
 
-        # Blit the game over text and other texts, centering them both vertically and horizontally
-        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, game_over_y))
+        # Blit the game over text and other texts, centering them both vertically and horizontally        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, game_over_y))
         screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, score_y))
         screen.blit(missed_text, (SCREEN_WIDTH // 2 - missed_text.get_width() // 2, missed_y))
         screen.blit(ratio_text, (SCREEN_WIDTH // 2 - ratio_text.get_width() // 2, ratio_y))
         screen.blit(best_all_time_text, (SCREEN_WIDTH // 2 - best_all_time_text.get_width() // 2, best_all_time_y))
         screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - best_percentage_text.get_width() // 2, best_percentage_y))
+        #screen.blit(retry_button_image, retry_button_rect)
 
         pygame.display.flip()

@@ -18,7 +18,6 @@
 
 ## Near Future
 #  Make the colors change over time; a evening to dark night cycle to dawn?
-#  Make the change of time fixed to an input audio file
 
 ## Far Future    
 #  Add 3 difficulties
