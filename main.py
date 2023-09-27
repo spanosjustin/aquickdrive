@@ -41,7 +41,7 @@ snowflake_image = pygame.transform.scale(snowflake_image, (20, 20))  # Adjust th
 retry_button_image = pygame.transform.scale(pygame.image.load("retry_button.png"), (100, 50))
 
 # Get the rect of the retry button for collision detection
-retry_button_rect = retry_button_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+retry_button_rect = retry_button_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 140))
 
 
 # Initialize player and coin lists
@@ -98,11 +98,21 @@ score = 0
 missed_coins = 0
 game_over = False
 
+# Initialize current_percentage
+current_percentage = 0.0
+
+# Define the ratio_text AKA the percentage here
+ratio_text = font.render(f"Percentage: 0.0%", True, (255, 255, 0))
+
 # Create a transparent surface for the headlight effect
 headlight_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
+# Initialize a flag to control the game loop
+running = True
+
+
 # Main game loop
-while not game_over:
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -164,10 +174,6 @@ while not game_over:
         snowflake_rect.y += 2  # Adjust the speed of falling snowflakes
         screen.blit(snowflake_image, snowflake_rect)
 
-    # Remove snowflakes that have gone off-screen
-    snowflakes = [sf for sf in snowflakes if sf.y < SCREEN_HEIGHT]
-
-
     screen.blit(player_image, player_rect)
 
     # Display the score in red letters
@@ -187,19 +193,25 @@ while not game_over:
     # Limit the frame rate
     pygame.time.delay(10)
 
-# Check if the game is over
-if game_over:
-    # Save the best score and best percentage back to the file when a new best score is achieved
-    if score > best_score_all_time:
-        best_score_all_time = score
-        with open("best_score.txt", "w") as file:
-            file.write(str(best_score_all_time))
+    # Check if the game is over
+    if missed_coins >= MAX_MISSED_COINS:
+        game_over = True
+
+    if game_over:
+        # Save the best score and best percentage back to the file when a new best score is achieved
+        if score > best_score_all_time:
+            best_score_all_time = score
+            with open("best_score.txt", "w") as file:
+                file.write(str(best_score_all_time))
+
+            # Update the best_all_time_text when there's a new high score
+            best_all_time_text = blue_font.render(f"High Score: {best_score_all_time}", True, (255, 255, 255))
 
         # Calculate the percentage for the current game session
-        if missed_coins > 0:
+        if score + missed_coins > 0:
             current_percentage = round((score / (score + missed_coins)) * 100, 1)
         else:
-            current_percentage = 100.0
+            current_percentage = 0.0
 
         # Check for a new best percentage
         if current_percentage > best_percentage_all_time:
@@ -207,77 +219,90 @@ if game_over:
             # Save the new best percentage to the file
             with open("best_percentage.txt", "w") as file:
                 file.write(str(best_percentage_all_time))
+                
+       # Define the game_over_text here
+        game_over_text = game_over_font.render("Game Over", True, (255, 0, 0))
 
-    # Define the game_over_text here
-    game_over_text = game_over_font.render("Game Over", True, (255, 0, 0))
+        # Get the rect for the game over text to center it vertically and horizontally
+        game_over_text_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
 
-    # Get the rect for the game over text to center it vertically and horizontally
-    game_over_text_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        # Define the vertical spacing between text elements
+        text_spacing = 40
 
-    # Define the vertical spacing between text elements
-    text_spacing = 60
+        # Calculate vertical positions for text elements
+        game_over_y = SCREEN_HEIGHT // 2 - 3 * text_spacing
+        score_y = game_over_y + text_spacing
+        missed_y = score_y + text_spacing
+        ratio_y = missed_y + text_spacing
+        best_all_time_y = ratio_y + text_spacing
+        best_percentage_y = best_all_time_y + text_spacing
 
-    # Calculate vertical positions for text elements
-    game_over_y = SCREEN_HEIGHT // 2 - 3 * text_spacing
-    score_y = game_over_y + text_spacing
-    missed_y = score_y + text_spacing
-    ratio_y = missed_y + text_spacing
-    best_all_time_y = ratio_y + text_spacing
-    best_percentage_y = best_all_time_y + text_spacing
-    
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+        # Calculate the center position for horizontal alignment
+        text_center_x = SCREEN_WIDTH // 2
 
-        # Check for a mouse click on the retry button
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # Get the mouse click position
-            mouse_pos = pygame.mouse.get_pos()
+        # Center-align text elements
+        game_over_text_rect.center = (text_center_x, game_over_y)
+        score_text_rect = score_text.get_rect(center=(text_center_x, score_y))
+        missed_text_rect = missed_text.get_rect(center=(text_center_x, missed_y))
+        ratio_text_rect = ratio_text.get_rect(center=(text_center_x, ratio_y))
+        best_all_time_text_rect = best_all_time_text.get_rect(center=(text_center_x, best_all_time_y))
 
-            # Check if the mouse click is within the retry button's rect
-            if retry_button_rect.collidepoint(mouse_pos):
-                # Reset the game variables
-                score = 0
-                missed_coins = 0
-                game_over = False
-                player_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
-                coins = []
+        # Display the game over screen elements
+        while game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-        # Load the best percentage of all time from the file
-        try:
-            with open("best_percentage.txt", "r") as file:
-                best_percentage_all_time = float(file.read())
-        except FileNotFoundError:
-            best_percentage_all_time = 0.0
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    mouse_pos = pygame.mouse.get_pos()
 
-        # Calculate and round the ratio as a percentage for the current game session
-        if missed_coins > 0:
-            ratio_percentage = round((score / (score + missed_coins)) * 100, 1)
-        else:
-            ratio_percentage = 100.0
+                    if retry_button_rect.collidepoint(mouse_pos):
+                        # Reset the game by reinitializing the game variables
+                        score = 0
+                        missed_coins = 0
+                        game_over = False
+                        player_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+                        coins = []
+                        snowflakes = []
 
-        # Display the best score of all time in white letters (within the game loop)
-        best_all_time_text = blue_font.render(f"High Score: {best_score_all_time}", True, (255, 255, 255))
-        screen.blit(best_all_time_text, (630, 10))
+                    else:
+                        # User wants to quit the game entirely
+                        running = False
+                        game_over = False
 
-        # Display the best percentage of all time on the game over screen
-        best_percentage_text = font.render(f"Best Percentage: {best_percentage_all_time}%", True, (255, 255, 255))
-        screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - best_percentage_text.get_width() // 2, best_percentage_y))
+            # Calculate the current_percentage
+            if score + missed_coins > 0:
+                current_percentage = round((score / (score + missed_coins)) * 100, 1)
+            else:
+                current_percentage = 100.0
 
-        # Define the ratio_text AKA the percentage
-        ratio_text = font.render(f"Percentage: {ratio_percentage}%", True, (255, 255, 0))
+            # Clear the screen
+            screen.fill((0, 0, 0))
 
-        # Clear the screen
-        screen.fill((0, 0, 0))
+            # Display game over text
+            screen.blit(game_over_text, game_over_text_rect)
 
-        # Blit the game over text and other texts, centering them both vertically and horizontally        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, game_over_y))
-        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, score_y))
-        screen.blit(missed_text, (SCREEN_WIDTH // 2 - missed_text.get_width() // 2, missed_y))
-        screen.blit(ratio_text, (SCREEN_WIDTH // 2 - ratio_text.get_width() // 2, ratio_y))
-        screen.blit(best_all_time_text, (SCREEN_WIDTH // 2 - best_all_time_text.get_width() // 2, best_all_time_y))
-        screen.blit(best_percentage_text, (SCREEN_WIDTH // 2 - best_percentage_text.get_width() // 2, best_percentage_y))
-        #screen.blit(retry_button_image, retry_button_rect)
+            # Display score, missed coins, best percentage, best score, and the retry button
+            screen.blit(score_text, score_text_rect)
+            screen.blit(missed_text, missed_text_rect)
+            screen.blit(ratio_text, ratio_text_rect)
+            screen.blit(best_all_time_text, best_all_time_text_rect)
 
-        pygame.display.flip()
+            # Define best_percentage_text here
+            best_percentage_text = blue_font.render(f"Best Percentage: {best_percentage_all_time}%", True, (255, 255, 255))
+
+            # Calculate the position for best_percentage_text_rect
+            best_percentage_text_rect = best_percentage_text.get_rect(center=(text_center_x, best_percentage_y))
+
+            # Display best_percentage_text
+            screen.blit(best_percentage_text, best_percentage_text_rect)
+
+            # Blit the retry button image
+            screen.blit(retry_button_image, retry_button_rect)
+
+            pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
+sys.exit()

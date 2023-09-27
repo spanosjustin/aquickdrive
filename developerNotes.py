@@ -17,6 +17,7 @@
 ## Going forward...
 
 ## Near Future
+#  Fix the percentage display on the Game Over Screen
 #  Make the colors change over time; a evening to dark night cycle to dawn?
 
 ## Far Future    
